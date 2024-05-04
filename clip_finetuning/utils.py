@@ -21,11 +21,10 @@ def find_most_similar_embeddings(embeddings1, embeddings2):
 
     return most_similar_indices
 
-def inference_image_match_score(dataloader):
+def get_predicted(dataloader):
     pbar = tqdm(dataloader, total=len(dataloader))
     image_embeddings = []
     text_embeddings = []
-    targets = torch.arange(len(dataloader), device=device)
     with torch.no_grad():
         for batch in pbar:
             inputs = processor(text=texts, images=images, return_tensors='pt', padding=True)
@@ -37,8 +36,33 @@ def inference_image_match_score(dataloader):
     image_embeddings, text_embeddings = torch.concat(image_embeddings), torch.concat(text_embeddings)
 
     predicted = find_most_similar_embeddings(image_embeddings, text_embeddings)
+    return predicted
+def inference_image_match_score(dataloader):
+    predicted = get_predicted(dataloader)
+    targets = torch.arange(len(dataloader), device=device)
     image_match_score = (targets == predicted).mean()
     return image_match_score
+
+def inference_image_multiple_match_score(image_path_list, text_list, dataloader):
+    predicted = get_predicted(dataloader)
+    
+    ground_truth = {}
+    for img, txt in zip(images, texts):
+        if img in ground_truth:
+            ground_truth[img].append(txt)
+        else:
+            ground_truth[img] = [txt]
+    correct_count = 0
+    total_count = len(predictions)
+
+    for image_id, predicted_text in predictions.items():
+        true_texts = ground_truth.get(image_id, [])
+        if predicted_text in true_texts:
+            correct_count += 1
+
+    accuracy = correct_count / total_count if total_count > 0 else 0
+    return accuracy
+
 
 def clean_images(dataset):
     image_paths, list_txts = dataset['image'], [conv[0]['value'] for conv in dataset['conversations']]

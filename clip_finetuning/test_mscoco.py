@@ -7,6 +7,7 @@ from pycocotools.coco import COCO
 from torch.nn import functional as F
 import os
 import numpy as np
+from utils import *
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,6 +45,9 @@ clip_model = CLIPModel.from_pretrained('openai/clip-vit-base-patch32')
 clip_processor = CLIPProcessor.from_pretrained('openai/clip-vit-base-patch32')
 clip_model.to(device)
 
+model, processor = clip_model, clip_processor
+accuracy = inference_image_match_score(dataloader)
+exit()
 # Training configuration
 optimizer = optim.Adam(clip_model.parameters(), lr=5e-6)
 temperature = 0.07
